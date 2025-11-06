@@ -91,12 +91,11 @@ public class MazeIO {
     }
 
     public static void exportJson(MazeEditor editor, MazeGrid grid) {
-        String mazeId = JOptionPane.showInputDialog(editor, "Enter Maze ID:");
         String mazeName = JOptionPane.showInputDialog(
             editor,
             "Enter Maze Name:"
         );
-        if (mazeId == null || mazeName == null) return;
+        if (mazeName == null) return;
 
         List<String> lines = new ArrayList<>();
         Set<Character> formsFound = new HashSet<>();
@@ -225,7 +224,6 @@ public class MazeIO {
         }
 
         MazeInfoData maze = new MazeInfoData();
-        maze.id = mazeId;
         maze.name = mazeName;
         maze.forms = new ArrayList<>();
         for (char formId : formsFound) {
@@ -236,7 +234,7 @@ public class MazeIO {
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         JFileChooser chooser = new JFileChooser();
-        chooser.setSelectedFile(new File(mazeId + ".json"));
+        chooser.setSelectedFile(new File( mazeName + ".json"));
         if (chooser.showSaveDialog(editor) == JFileChooser.APPROVE_OPTION) {
             try (
                 FileWriter writer = new FileWriter(chooser.getSelectedFile())

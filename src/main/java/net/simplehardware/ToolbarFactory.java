@@ -1,7 +1,18 @@
 package net.simplehardware;
 
-import java.awt.*;
-import javax.swing.*;
+import java.awt.Component;
+
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.SpinnerNumberModel;
 
 public class ToolbarFactory {
 
@@ -92,6 +103,18 @@ public class ToolbarFactory {
         saveBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         saveBtn.addActionListener(e -> MazeIO.exportJson(editor, grid));
 
+        JButton calcMinMovesBtn = new JButton("Calculate Min Moves");
+        calcMinMovesBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        calcMinMovesBtn.addActionListener(e -> {
+            int playerId = editor.getCurrentPlayerId();
+            int minMoves = Pathfinder.calculateMinimumMoves(grid.getCells(), playerId);
+            if (minMoves != -1) {
+                JOptionPane.showMessageDialog(null, 
+                    "Minimum moves needed for player " + playerId + ": " + minMoves, 
+                    "Pathfinding Result", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+
         JButton clearBtn = new JButton("Clear All");
         clearBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
         clearBtn.addActionListener(e -> {
@@ -133,6 +156,8 @@ public class ToolbarFactory {
         panel.add(loadBtn);
         panel.add(Box.createVerticalStrut(10));
         panel.add(saveBtn);
+        panel.add(Box.createVerticalStrut(10));
+        panel.add(calcMinMovesBtn);
         panel.add(Box.createVerticalStrut(10));
         panel.add(topWall);
         panel.add(Box.createVerticalStrut(10));

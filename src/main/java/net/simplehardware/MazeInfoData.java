@@ -4,7 +4,6 @@ import java.util.List;
 
 public class MazeInfoData {
 
-    public String id;
     public String name;
     public List<FormInfo> forms;
     public String maze;
