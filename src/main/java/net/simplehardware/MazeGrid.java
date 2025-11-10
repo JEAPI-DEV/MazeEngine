@@ -1,5 +1,8 @@
 package net.simplehardware;
 
+import net.simplehardware.models.CellButton;
+import net.simplehardware.models.Mode;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseWheelEvent;

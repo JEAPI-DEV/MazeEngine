@@ -1,4 +1,4 @@
-package net.simplehardware;
+package net.simplehardware.utils;
 
 import java.awt.BorderLayout;
 import java.awt.Component;

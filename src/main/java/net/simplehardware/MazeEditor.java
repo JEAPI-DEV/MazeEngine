@@ -1,8 +1,8 @@
 package net.simplehardware;
 
+import net.simplehardware.models.Mode;
 import java.awt.*;
 import javax.swing.*;
-import javax.swing.BorderFactory;
 
 public class MazeEditor extends JFrame {
 

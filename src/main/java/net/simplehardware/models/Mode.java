@@ -1,4 +1,4 @@
-package net.simplehardware;
+package net.simplehardware.models;
 
 import java.util.HashMap;
 import java.util.Map;

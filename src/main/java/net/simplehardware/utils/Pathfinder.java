@@ -1,4 +1,7 @@
-package net.simplehardware;
+package net.simplehardware.utils;
+
+import net.simplehardware.models.CellButton;
+import net.simplehardware.models.Mode;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -7,7 +10,7 @@ import java.util.Objects;
 import java.util.Queue;
 
 /**
- * Utility class for finding shortest paths in the maze using BFS algorithm
+ * Utility class for finding the shortest path in the maze using BFS algorithm
  */
 public class Pathfinder {
 

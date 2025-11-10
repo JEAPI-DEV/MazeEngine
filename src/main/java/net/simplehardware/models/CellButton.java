@@ -1,4 +1,6 @@
-package net.simplehardware;
+package net.simplehardware.models;
+
+import net.simplehardware.MazeEditor;
 
 import java.awt.Color;
 import java.awt.Dimension;

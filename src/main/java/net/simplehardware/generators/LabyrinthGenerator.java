@@ -1,11 +1,15 @@
-package net.simplehardware;
+package net.simplehardware.generators;
+import net.simplehardware.models.CellButton;
+import net.simplehardware.MazeGrid;
+import net.simplehardware.models.Mode;
+
 import java.util.*;
 
 public class LabyrinthGenerator {
 
     private static final Random RNG = new Random();
 
-    public static boolean generateBalancedMaze(MazeGrid grid, int players) {
+    public static boolean generateMaze(MazeGrid grid, int players) {
         int n = grid.getGridSize();
         if (n < 5) return false;
 

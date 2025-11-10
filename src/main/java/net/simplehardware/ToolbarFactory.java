@@ -1,5 +1,14 @@
 package net.simplehardware;
 
+import net.simplehardware.generators.LabyrinthGenerator;
+import net.simplehardware.generators.LabyrinthGeneratorOLD;
+import net.simplehardware.models.CellButton;
+import net.simplehardware.models.Mode;
+import net.simplehardware.models.SVGButton;
+import net.simplehardware.utils.DialogUtils;
+import net.simplehardware.utils.MazeIO;
+import net.simplehardware.utils.Pathfinder;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -159,12 +168,15 @@ public class ToolbarFactory {
         });
 
         // Generate Labyrinth Button - Teal Material Design with SVG Icon
-        SVGButton genBtn = new SVGButton("Generate", "/images/generate_Icon.svg");
-        genBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
-        genBtn.addActionListener(e -> {
-            LabyrinthGenerator.generateBalancedMaze(grid, 4);
-        });
+        SVGButton genOLD = new SVGButton("Generate OLD", "/images/generate2_Icon.svg");
+        genOLD.setAlignmentX(Component.CENTER_ALIGNMENT);
+        genOLD.addActionListener(e -> LabyrinthGeneratorOLD.generateMaze(grid, 4));
 
+
+        // Generate Labyrinth Button - Teal Material Design with SVG Icon
+        SVGButton genBtn = new SVGButton("Generate NEW", "/images/generate_Icon.svg");
+        genBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        genBtn.addActionListener(e -> LabyrinthGenerator.generateMaze(grid, 4));
 
         panel.add(clearBtn);
         panel.add(Box.createVerticalStrut(8));
@@ -177,6 +189,8 @@ public class ToolbarFactory {
         panel.add(topWall);
         panel.add(Box.createVerticalStrut(8));
         panel.add(genBtn);
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(genOLD);
         panel.add(Box.createVerticalStrut(12));
         Dimension min = panel.getMinimumSize();
         panel.setMaximumSize(new Dimension(min.width, Integer.MAX_VALUE));

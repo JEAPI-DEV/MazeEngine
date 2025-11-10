@@ -1,4 +1,4 @@
-package net.simplehardware;
+package net.simplehardware.utils;
 
 import java.io.File;
 import java.io.FileReader;
@@ -16,6 +16,12 @@ import javax.swing.JSpinner;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.simplehardware.MazeEditor;
+import net.simplehardware.MazeGrid;
+import net.simplehardware.models.CellButton;
+import net.simplehardware.models.Mode;
+import net.simplehardware.models.FormInfo;
+import net.simplehardware.models.MazeInfoData;
 
 public class MazeIO {
 
