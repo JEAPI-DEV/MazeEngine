@@ -3,6 +3,8 @@ package net.simplehardware;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -75,15 +77,17 @@ public class ToolbarFactory {
         });
 
         JLabel formsLabel = new JLabel("Forms:");
-        String[] formOptions = {
-            "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K",
-            "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V",
-            "W", "X", "Y", "Z",
-        };
-        JComboBox<String> formsDropdown = new JComboBox<>(formOptions);
+
+        List<String> formOptions = Arrays.stream(Mode.values())
+                .filter(m -> m.name().startsWith("FORM_"))
+                .map(Mode::getLabel)
+                .toList();
+
+        JComboBox<String> formsDropdown = new JComboBox<>(formOptions.toArray(new String[0]));
+
         formsDropdown.addActionListener(e -> {
             String selected = (String) formsDropdown.getSelectedItem();
-            Mode formMode = Mode.valueOf("FORM_" + selected);
+            Mode formMode = Mode.fromLabel(selected);
             editor.setCurrentMode(formMode);
         });
 
