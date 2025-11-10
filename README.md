@@ -2,11 +2,11 @@
 
 This project is a maze creator application built in Java. It allows users to create, mazes with forms collection mechanics for the Maze Runner game system.
 
-![1-new.png](Images/1-new.png)
+![1new.png](Images/1new.png)
 
 ## Generated Map Example
 
-![2-new.png](Images/2-new.png)
+![2new.png](Images/2new.png)
 
 ```json
 {
@@ -64,7 +64,7 @@ maven install
 ### Pre-built Release
 Download the Release version and run with:
 ```bash
-java -jar MazeCreator_1_3.jar
+java -jar MazeCreator_1_3_1.jar
 ```
 
 ## Usage
