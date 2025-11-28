@@ -1,0 +1,387 @@
+package net.simplehardware.engine.core;
+
+import net.simplehardware.engine.game.ActionResult;
+import net.simplehardware.engine.game.Direction;
+import net.simplehardware.engine.game.Maze;
+import net.simplehardware.engine.players.Player;
+import net.simplehardware.engine.cells.Cell;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.*;
+import java.util.concurrent.TimeoutException;
+
+/**
+ * Main game engine that coordinates the game flow
+ */
+public class GameEngine {
+    private final Maze maze;
+    private final List<Player> players;
+    private final Map<Player, PlayerProcess> playerProcesses;
+    private final Referee referee;
+    private final int leagueLevel;
+    private final int maxTurns;
+    private final long turnTimeout;
+    private final long firstTurnTimeout;
+    private final int sheetsPerPlayer;
+
+    private final Map<Player, ActionResult> lastResults;
+    // private GameViewer viewer; // Removed
+    private boolean randomSpawn = false;
+    private final Map<Integer, StringBuilder> playerLogs = new HashMap<>();
+    private final List<String> jarPaths; // Store jar paths for logging filenames
+    private ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
+    private ByteArrayOutputStream errorCapture = new ByteArrayOutputStream();
+    private final StringBuilder protocolCapture = new StringBuilder();
+    private final PrintStream originalOut = System.out;
+    private final PrintStream originalErr = System.err;
+
+    public GameEngine(Maze maze, List<String> jarPaths, GameConfig config) throws IOException {
+        this.maze = maze;
+        this.jarPaths = new ArrayList<>(jarPaths);
+        this.leagueLevel = config.leagueLevel;
+        this.maxTurns = config.maxTurns;
+        this.turnTimeout = config.turnTimeoutMs;
+        this.firstTurnTimeout = config.firstTurnTimeoutMs;
+        this.sheetsPerPlayer = config.sheetsPerPlayer;
+
+        this.players = new ArrayList<>();
+        this.playerProcesses = new HashMap<>();
+        this.lastResults = new HashMap<>();
+
+        // Initialize players
+        initializePlayers(jarPaths);
+
+        // Assign forms to players
+        assignForms();
+
+        // Remove forms and finish cells for unloaded players
+        // maze.removeUnusedPlayerCells(players);
+
+        // Update finish cells with required form counts
+        maze.updateFinishCells(players);
+
+        this.referee = new Referee(maze, players, leagueLevel);
+    }
+
+    public void setRandomSpawn(boolean randomSpawn) {
+        this.randomSpawn = randomSpawn;
+    }
+
+    private void initializePlayers(List<String> jarPaths) throws IOException {
+        List<int[]> validStarts = new ArrayList<>();
+        if (randomSpawn) {
+            for (int y = 0; y < maze.getHeight(); y++) {
+                for (int x = 0; x < maze.getWidth(); x++) {
+                    Cell cell = maze.getCell(x, y);
+                    if (cell instanceof net.simplehardware.engine.cells.FloorCell &&
+                            !(cell instanceof net.simplehardware.engine.cells.FinishCell)) {
+                        validStarts.add(new int[] { x, y });
+                    }
+                }
+            }
+            Collections.shuffle(validStarts);
+        }
+
+        for (int i = 0; i < jarPaths.size(); i++) {
+            int playerId = i + 1;
+            int[] startPos;
+
+            if (randomSpawn && i < validStarts.size()) {
+                startPos = validStarts.get(i);
+                maze.setStartPosition(playerId, startPos[0], startPos[1]);
+            } else {
+                startPos = maze.getStartPosition(playerId);
+            }
+
+            if (startPos == null) {
+                System.err.println("No start position found for player " + playerId);
+                continue;
+            }
+
+            Player player = new Player(playerId, startPos[0], startPos[1], sheetsPerPlayer);
+            players.add(player);
+
+            try {
+                PlayerProcess process = new PlayerProcess(playerId, jarPaths.get(i));
+                playerProcesses.put(player, process);
+                lastResults.put(player, ActionResult.ok(""));
+                playerLogs.put(playerId, new StringBuilder());
+            } catch (IOException e) {
+                System.err.println("Failed to start player " + playerId + ": " + e.getMessage());
+                player.setActive(false);
+            }
+        }
+    }
+
+    private void assignForms() {
+        for (Player player : players) {
+            for (int y = 0; y < maze.getHeight(); y++) {
+                for (int x = 0; x < maze.getWidth(); x++) {
+                    Cell cell = maze.getCell(x, y);
+                    if (cell instanceof net.simplehardware.engine.cells.FloorCell) {
+                        net.simplehardware.engine.cells.FloorCell floor = (net.simplehardware.engine.cells.FloorCell) cell;
+                        if (floor.getForm() != null && floor.getFormOwner() == player.getId()) {
+                            char form = floor.getForm();
+                            if (!player.getAssignedForms().contains(form)) {
+                                player.addAssignedForm(form);
+                            }
+                        }
+                    }
+                }
+            }
+            // Sort assigned forms alphabetically
+            player.getAssignedForms().sort(Character::compareTo);
+        }
+    }
+
+    public void initialize() {
+        System.out.println("=== Game Initialization ===");
+        System.out.println("Maze: " + maze.getName());
+        System.out.println("Players: " + players.size());
+        System.out.println("League Level: " + leagueLevel);
+        System.out.println("Max Turns: " + maxTurns);
+
+        for (Player player : players) {
+            if (!player.isActive())
+                continue;
+
+            PlayerProcess process = playerProcesses.get(player);
+
+            // Send initialization data
+            // Line 1: MAZE_WIDTH MAZE_HEIGHT LEAGUE_LEVEL
+            process.sendLine(maze.getWidth() + " " + maze.getHeight() + " " + leagueLevel);
+
+            // Line 2: PLAYER_ID START_X START_Y SHEETS_PER_PLAYER (Level 5+)
+            String line2 = player.getId() + " " + player.getStartX() + " " + player.getStartY();
+            if (leagueLevel >= 5) {
+                line2 += " " + sheetsPerPlayer;
+            }
+            process.sendLine(line2);
+
+            System.out.println("Player " + player.getId() + " initialized at (" +
+                    player.getStartX() + "," + player.getStartY() + ")");
+        }
+    }
+
+    public void runGame() {
+        // Viewer removed
+        // SwingUtilities.invokeLater(() -> {
+        // viewer = new GameViewer(maze);
+        // viewer.showViewer();
+        // });
+
+        // Wait for viewer to initialize
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        System.out.println("\n=== Starting Game ===\n");
+
+        // Add initial snapshot - removed
+        // captureSnapshot(-1, "=== Game Start ===\nMaze: " + maze.getName(), "", "",
+        // "");
+
+        while (!referee.isGameOver(maxTurns)) {
+            runTurn();
+            referee.updateTurn();
+        }
+
+        System.out.println("\n=== Game Over ===");
+        printFinalResults();
+
+        // Add final snapshot - removed
+        // captureSnapshot(referee.getCurrentTurn(), "=== Game Over ===", "", "", "");
+
+        // Save logs
+        savePlayerLogs();
+
+        // Cleanup
+        for (PlayerProcess process : playerProcesses.values()) {
+            process.destroy();
+        }
+    }
+
+    private void runTurn() {
+        int turn = referee.getCurrentTurn() + 1;
+
+        // Capture game engine output for this turn
+        outputCapture.reset();
+        errorCapture.reset();
+        protocolCapture.setLength(0);
+        System.setOut(new PrintStream(outputCapture));
+        System.setErr(new PrintStream(errorCapture));
+
+        System.out.println("--- Turn " + turn + " ---");
+
+        for (Player player : players) {
+            if (!player.isActive())
+                continue;
+
+            PlayerProcess process = playerProcesses.get(player);
+
+            protocolCapture.append("=== Player ").append(player.getId()).append(" ===\n");
+
+            // Send turn data (6 lines)
+            sendTurnData(player, process);
+            protocolCapture.append("\n");
+
+            // Receive player action
+            try {
+                long timeout = (turn == 1) ? firstTurnTimeout : turnTimeout;
+                String action = process.readLine(timeout);
+
+                if (action == null || action.trim().isEmpty()) {
+                    System.out.println("Player " + player.getId() + ": <no action>");
+                    lastResults.put(player, ActionResult.fail("INVALID"));
+                    continue;
+                }
+
+                System.out.println("Player " + player.getId() + ": " + action);
+
+                // Process action
+                ActionResult result = referee.processAction(player, action);
+                lastResults.put(player, result);
+
+                logToPlayer(player.getId(), action); // Log action sent by player
+
+                System.out.println("  Result: " + result);
+
+            } catch (TimeoutException e) {
+                System.out.println("Player " + player.getId() + ": TIMEOUT");
+                player.setTimedOut(true);
+                player.setActive(false);
+                lastResults.put(player, ActionResult.fail("TIMEOUT"));
+            }
+        }
+
+        System.out.println();
+
+        // Collect all player stdout and stderr
+        StringBuilder playerStdoutAll = new StringBuilder();
+        StringBuilder playerStderrAll = new StringBuilder();
+        for (Player player : players) {
+            PlayerProcess process = playerProcesses.get(player);
+            String stdout = process.getStdout();
+            String stderr = process.getStderr();
+
+            if (!stdout.isEmpty()) {
+                playerStdoutAll.append("=== Player ").append(player.getId()).append(" stdout ===\n");
+                playerStdoutAll.append(stdout);
+            }
+            if (!stderr.isEmpty()) {
+                playerStderrAll.append("=== Player ").append(player.getId()).append(" stderr ===\n");
+                playerStderrAll.append(stderr);
+            }
+            process.resetIO();
+        }
+
+        // Capture snapshot with all output streams
+        String gameLog = outputCapture.toString();
+        String playerStdout = playerStdoutAll.toString();
+        String playerStderr = playerStderrAll.toString();
+        String protocol = protocolCapture.toString();
+        // captureSnapshot call removed
+
+        // Restore original streams
+        System.setOut(originalOut);
+        System.setErr(originalErr);
+
+        // Print to console
+        System.out.print(gameLog);
+        if (!playerStderr.isEmpty()) {
+            System.err.print(playerStderr);
+        }
+    }
+
+    private void sendTurnData(Player player, PlayerProcess process) {
+        // Line 1: Last action result
+        ActionResult lastResult = lastResults.get(player);
+        String line1 = lastResult.toString();
+        process.sendLine(line1);
+        protocolCapture.append(line1).append("\n");
+        logToPlayer(player.getId(), line1);
+
+        // Line 2: Current cell status
+        String currentCell = maze.getCellInfo(player.getX(), player.getY(), players, player);
+        process.sendLine(currentCell);
+        protocolCapture.append(currentCell).append("\n");
+        logToPlayer(player.getId(), currentCell);
+
+        // Lines 3-6: Neighboring cells (NORTH, EAST, SOUTH, WEST)
+        for (Direction dir : Direction.values()) {
+            int nx = player.getX() + dir.getDx();
+            int ny = player.getY() + dir.getDy();
+            String cellInfo = maze.getCellInfo(nx, ny, players, player);
+            process.sendLine(cellInfo);
+            protocolCapture.append(cellInfo).append("\n");
+            logToPlayer(player.getId(), cellInfo);
+        }
+    }
+
+    private void printFinalResults() {
+        System.out.println("Final Scores:");
+
+        List<Player> sortedPlayers = new ArrayList<>(players);
+        sortedPlayers.sort((p1, p2) -> Integer.compare(p2.getScore(), p1.getScore()));
+
+        for (int i = 0; i < sortedPlayers.size(); i++) {
+            Player p = sortedPlayers.get(i);
+            String status = p.isFinished() ? "FINISHED"
+                    : p.isTimedOut() ? "TIMEOUT" : !p.isActive() ? "INACTIVE" : "ACTIVE";
+            System.out.println((i + 1) + ". Player " + p.getId() + ": " +
+                    p.getScore() + " points (" + status + ") - Forms: " +
+                    p.getCollectedForms().size() + "/" + p.getAssignedForms().size() +
+                    " - Turns: " + (p.isActive() ? referee.getCurrentTurn() : "Stopped"));
+        }
+
+        Player winner = referee.getWinner();
+        if (winner != null) {
+            System.out.println("\nWinner: Player " + winner.getId() + " with " +
+                    winner.getScore() + " points!");
+        }
+    }
+
+    // captureSnapshot method removed
+
+    private void logToPlayer(int playerId, String line) {
+        StringBuilder log = playerLogs.get(playerId);
+        if (log != null) {
+            log.append(line).append("\n");
+        }
+    }
+
+    private void savePlayerLogs() {
+        for (int i = 0; i < players.size(); i++) {
+            Player player = players.get(i);
+            int playerId = player.getId();
+            StringBuilder log = playerLogs.get(playerId);
+            if (log != null && i < jarPaths.size()) {
+                String jarPath = jarPaths.get(i);
+                String jarName = new File(jarPath).getName();
+                String logFileName = jarName + ".txt"; // "with the jar name"
+
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFileName))) {
+                    writer.write(log.toString());
+                    System.out.println("Saved protocol log for Player " + playerId + " to " + logFileName);
+                } catch (IOException e) {
+                    System.err.println("Failed to save log for Player " + playerId + ": " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    public static class GameConfig {
+        public int leagueLevel = 5;
+        public int maxTurns = 150;
+        public long turnTimeoutMs = 50;
+        public long firstTurnTimeoutMs = 1000;
+        public int sheetsPerPlayer = 2;
+    }
+}

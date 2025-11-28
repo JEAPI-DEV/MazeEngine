@@ -23,6 +23,7 @@ public class ConfigManager {
 
     public static class ConfigData {
         public boolean confirmationsEnabled = true;
+        public java.util.List<String> playerJarPaths = new java.util.ArrayList<>();
     }
 
     public static boolean isConfirmationsEnabled() {
@@ -31,6 +32,15 @@ public class ConfigManager {
 
     public static void setConfirmationsEnabled(boolean enabled) {
         config.confirmationsEnabled = enabled;
+        saveConfig();
+    }
+
+    public static java.util.List<String> getPlayerJarPaths() {
+        return config.playerJarPaths;
+    }
+
+    public static void setPlayerJarPaths(java.util.List<String> paths) {
+        config.playerJarPaths = paths != null ? new java.util.ArrayList<>(paths) : new java.util.ArrayList<>();
         saveConfig();
     }
 
