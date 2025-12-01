@@ -125,7 +125,8 @@ public class Maze {
      * 
      * @param dir The direction we are looking in (null for current cell)
      */
-    public String getCellInfo(int x, int y, List<Player> allPlayers, Player currentPlayer, Direction dir) {
+    public String getCellInfo(int x, int y, List<Player> allPlayers, Player currentPlayer, Direction dir,
+            int leagueLevel) {
         Cell cell = getCell(x, y);
         if (cell == null) {
             return "WALL";
@@ -138,16 +139,16 @@ public class Maze {
         }
 
         // Add opponent proximity indicator (Level 3+)
-        if (dir == null) {
-            // Current cell: check if any opponent is HERE
+        if (leagueLevel >= 3) {
+            // Check if any opponent is HERE (on this cell)
             if (hasOpponent(x, y, allPlayers, currentPlayer)) {
                 info.append(" !");
-            }
-        } else {
-            // Neighbor cell: check if any opponent is visible in this direction
-            int distance = findOpponentInDirection(x, y, dir, allPlayers, currentPlayer);
-            if (distance > 0) {
-                info.append(" !").append(distance);
+            } else if (dir != null) {
+                // If not here, and we are looking in a direction, check further
+                int distance = findOpponentInDirection(x, y, dir, allPlayers, currentPlayer);
+                if (distance > 0) {
+                    info.append(" !").append(distance);
+                }
             }
         }
 

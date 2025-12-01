@@ -188,12 +188,11 @@ public class GameEngine {
         }
 
         System.out.println("\n=== Starting Game ===\n");
-
-        // Add initial snapshot - removed
-        // captureSnapshot(-1, "=== Game Start ===\nMaze: " + maze.getName(), "", "",
-        // "");
+        System.out.println(
+                "DEBUG: Entering game loop. MaxTurns: " + maxTurns + ", CurrentTurn: " + referee.getCurrentTurn());
 
         while (!referee.isGameOver(maxTurns)) {
+            System.out.println("DEBUG: Running turn " + (referee.getCurrentTurn() + 1));
             runTurn();
             referee.updateTurn();
         }
@@ -343,7 +342,7 @@ public class GameEngine {
         logToPlayer(player.getId(), line1);
 
         // Line 2: Current cell status
-        String currentCell = maze.getCellInfo(player.getX(), player.getY(), players, player, null);
+        String currentCell = maze.getCellInfo(player.getX(), player.getY(), players, player, null, leagueLevel);
         process.sendLine(currentCell);
         protocolCapture.append(currentCell).append("\n");
         logToPlayer(player.getId(), currentCell);
@@ -352,7 +351,7 @@ public class GameEngine {
         for (Direction dir : Direction.values()) {
             int nx = player.getX() + dir.getDx();
             int ny = player.getY() + dir.getDy();
-            String cellInfo = maze.getCellInfo(nx, ny, players, player, dir);
+            String cellInfo = maze.getCellInfo(nx, ny, players, player, dir, leagueLevel);
             process.sendLine(cellInfo);
             protocolCapture.append(cellInfo).append("\n");
             logToPlayer(player.getId(), cellInfo);
