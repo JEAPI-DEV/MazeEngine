@@ -285,4 +285,26 @@ public class Maze {
         }
         System.out.println("Total remaining forms: " + remainingForms);
     }
+
+    /**
+     * Apply level-specific restrictions to the maze
+     */
+    public void applyLevelRestrictions(int level) {
+        if (level == 1) {
+            System.out.println("Applying Level 1 restrictions: Removing all forms");
+            int formsRemoved = 0;
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    Cell cell = cells[x][y];
+                    if (cell instanceof FloorCell floor) {
+                        if (floor.getForm() != null) {
+                            floor.removeForm();
+                            formsRemoved++;
+                        }
+                    }
+                }
+            }
+            System.out.println("Removed " + formsRemoved + " forms for Level 1");
+        }
+    }
 }

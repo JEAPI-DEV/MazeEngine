@@ -60,11 +60,14 @@ public class GameEngine {
         // Initialize players
         initializePlayers(jarPaths);
 
+        // Apply level restrictions (Level 1: No forms)
+        maze.applyLevelRestrictions(leagueLevel);
+
         // Assign forms to players
         assignForms();
 
         // Remove forms and finish cells for unloaded players
-        // maze.removeUnusedPlayerCells(players);
+        maze.removeUnusedPlayerCells(players);
 
         // Update finish cells with required form counts
         maze.updateFinishCells(players);
