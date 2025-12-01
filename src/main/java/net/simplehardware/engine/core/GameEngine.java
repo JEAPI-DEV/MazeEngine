@@ -5,6 +5,8 @@ import net.simplehardware.engine.game.Direction;
 import net.simplehardware.engine.game.Maze;
 import net.simplehardware.engine.players.Player;
 import net.simplehardware.engine.cells.Cell;
+import net.simplehardware.engine.viewer.GameState;
+import net.simplehardware.engine.viewer.PlayerLog;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -41,6 +43,10 @@ public class GameEngine {
     private final StringBuilder protocolCapture = new StringBuilder();
     private final PrintStream originalOut = System.out;
     private final PrintStream originalErr = System.err;
+
+    // Game history for GUI viewer
+    private final List<GameState> gameHistory = new ArrayList<>();
+    private final Map<Integer, PlayerLog> currentTurnLogs = new HashMap<>();
 
     public GameEngine(Maze maze, List<String> jarPaths, GameConfig config) {
         this.maze = maze;
@@ -194,6 +200,10 @@ public class GameEngine {
         while (!referee.isGameOver(maxTurns)) {
             System.out.println("DEBUG: Running turn " + (referee.getCurrentTurn() + 1));
             runTurn();
+
+            // Capture state after turn
+            captureGameState();
+
             referee.updateTurn();
         }
 
@@ -303,6 +313,9 @@ public class GameEngine {
             PlayerProcess process = playerProcesses.get(player);
             String stdout = process.getStdout();
             String stderr = process.getStderr();
+
+            // Store logs for GUI viewer
+            currentTurnLogs.put(player.getId(), new PlayerLog(stdout, stderr));
 
             if (!stdout.isEmpty()) {
                 playerStdoutAll.append("=== Player ").append(player.getId()).append(" stdout ===\n");
@@ -423,6 +436,41 @@ public class GameEngine {
                 }
             }
         }
+    }
+
+    /**
+     * Capture current game state for GUI viewer
+     */
+    private void captureGameState() {
+        // Get current cell grid
+        Cell[][] cellGrid = new Cell[maze.getWidth()][maze.getHeight()];
+        for (int x = 0; x < maze.getWidth(); x++) {
+            for (int y = 0; y < maze.getHeight(); y++) {
+                cellGrid[x][y] = maze.getCell(x, y);
+            }
+        }
+
+        GameState state = new GameState(
+                referee.getCurrentTurn(),
+                maze.getWidth(),
+                maze.getHeight(),
+                players,
+                cellGrid,
+                new HashMap<>(currentTurnLogs));
+
+        gameHistory.add(state);
+        currentTurnLogs.clear();
+    }
+
+    /**
+     * Get game history for GUI viewer
+     */
+    public List<GameState> getGameHistory() {
+        return new ArrayList<>(gameHistory);
+    }
+
+    public Maze getMaze() {
+        return maze;
     }
 
     public static class GameConfig {

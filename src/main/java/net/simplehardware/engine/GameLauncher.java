@@ -3,6 +3,7 @@ package net.simplehardware.engine;
 import com.google.gson.Gson;
 import net.simplehardware.engine.core.GameEngine;
 import net.simplehardware.engine.game.Maze;
+import net.simplehardware.engine.viewer.GameViewer;
 import net.simplehardware.models.MazeInfoData;
 
 import java.io.File;
@@ -29,6 +30,7 @@ public class GameLauncher {
         boolean randomSpawn = false;
         int level = 5;
         int logging = 1, turninfo = 1, debug = 0;
+        boolean gui = false;
 
         try {
             for (int i = 0; i < args.length; i++) {
@@ -76,25 +78,28 @@ public class GameLauncher {
                         }
                         break;
                     case "--log":
-                        if(i + 1 < args.length){
+                        if (i + 1 < args.length) {
                             logging = Integer.parseInt(args[++i]);
                         } else {
                             throw new IllegalArgumentException("Missing value for --log");
                         }
                         break;
                     case "--turnInfo":
-                        if(i + 1 < args.length){
+                        if (i + 1 < args.length) {
                             turninfo = Integer.parseInt(args[++i]);
                         } else {
                             throw new IllegalArgumentException("Missing value for --turnInfo");
                         }
                         break;
                     case "--debug":
-                        if(i + 1 < args.length){
+                        if (i + 1 < args.length) {
                             debug = Integer.parseInt(args[++i]);
                         } else {
                             throw new IllegalArgumentException("Missing value for --debug");
                         }
+                        break;
+                    case "--gui":
+                        gui = true;
                         break;
                     default:
                         // Ignore unknown args or handle as needed
@@ -106,7 +111,7 @@ public class GameLauncher {
                 throw new IllegalArgumentException("--map argument is required");
             }
 
-            launchGame(mapPath, playerPaths, maxTurns, randomSpawn, level, logging, turninfo, debug);
+            launchGame(mapPath, playerPaths, maxTurns, randomSpawn, level, logging, turninfo, debug, gui);
 
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
@@ -120,7 +125,8 @@ public class GameLauncher {
                 "Usage: java -jar MazeRunner.jar --map \"path/to/file\" --players <count> \"path/to/player/1\" ... --max-turns <count> --randomSpawn <0|1> --level <int>");
     }
 
-    public static void launchGame(String mazeFile, List<String> jarPaths, int maxTurns, boolean randomSpawn, int level, int logging, int turninfo, int debug)
+    public static void launchGame(String mazeFile, List<String> jarPaths, int maxTurns, boolean randomSpawn, int level,
+            int logging, int turninfo, int debug, boolean gui)
             throws IOException {
         // Load maze data
         MazeInfoData mazeData;
@@ -169,7 +175,7 @@ public class GameLauncher {
         config.leagueLevel = level;
         config.logging = logging;
         config.maxTurns = maxTurns;
-        config.turnTimeoutMs = 100; //(was 50ms)
+        config.turnTimeoutMs = 100; // (was 50ms)
         config.firstTurnTimeoutMs = 1000;
         config.sheetsPerPlayer = 2; // Default or could be arg
         // Create and run game
@@ -179,5 +185,12 @@ public class GameLauncher {
 
         engine.initialize();
         engine.runGame();
+
+        // Launch GUI viewer if requested
+        if (gui) {
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                new GameViewer(engine.getGameHistory(), mazeData.name);
+            });
+        }
     }
 }
