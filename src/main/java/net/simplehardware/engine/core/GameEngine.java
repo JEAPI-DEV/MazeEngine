@@ -190,7 +190,10 @@ public class GameEngine {
 
         while (!referee.isGameOver(maxTurns)) {
             runTurn();
-            referee.updateTurn();
+            for (Player player : players) {
+                referee.updateTurn();
+            }
+
         }
 
         System.out.println("\n=== Game Over ===");
@@ -256,7 +259,8 @@ public class GameEngine {
                             break;
                         }
                     }
-                } catch (IOException e) {}
+                } catch (IOException e) {
+                }
 
                 String action = outputs.getLast();
                 if (action.startsWith("Listening ") && outputs.size() > 1) {
@@ -377,8 +381,8 @@ public class GameEngine {
                     : p.isTimedOut() ? "TIMEOUT" : !p.isActive() ? "INACTIVE" : "ACTIVE";
             System.out.println((i + 1) + ". Player " + p.getId() + ": " +
                     p.getScore() + " points (" + status + ") - Forms: " +
-                    p.getCollectedForms().size() + "/" + p.getAssignedForms().size() +
-                    " - Turns: " + (p.isFinished() || p.isActive() ? referee.getCurrentTurn() : "Stopped"));
+                    p.getCollectedForms().size() + "/" + p.getAssignedForms().size());
+
         }
 
         Player winner = referee.getWinner();
@@ -386,9 +390,8 @@ public class GameEngine {
             System.out.println("\nWinner: Player " + winner.getId() + " with " +
                     winner.getScore() + " points!");
         }
+        System.out.println("Total Turns: " + referee.getCurrentTurn());
     }
-
-    // captureSnapshot method removed
 
     private void logToPlayer(int playerId, String line) {
         StringBuilder log = playerLogs.get(playerId);
@@ -420,7 +423,7 @@ public class GameEngine {
     public static class GameConfig {
         public int leagueLevel = 5;
         public int maxTurns = 150;
-        public long turnTimeoutMs = 50;
+        public long turnTimeoutMs = 100;
         public long firstTurnTimeoutMs = 1000;
         public int sheetsPerPlayer = 2;
     }

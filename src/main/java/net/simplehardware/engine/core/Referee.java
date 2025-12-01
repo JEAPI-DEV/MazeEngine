@@ -24,7 +24,7 @@ public class Referee {
         this.maze = maze;
         this.players = players;
         this.leagueLevel = leagueLevel;
-        this.currentTurn = 0;
+        this.currentTurn = 1;
     }
 
     public ActionResult processAction(Player player, String actionLine) {
