@@ -344,7 +344,7 @@ public class GameViewer extends JFrame {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            CELL_SIZE = getWidth()/this.width;
+            CELL_SIZE = getHeight()/this.height;
 
             if (currentState == null)
                 return;
@@ -374,24 +374,28 @@ public class GameViewer extends JFrame {
             int py = y * CELL_SIZE;
 
             // Fill background
+            Color bgColor;
             switch (cell.getType()) {
                 case WALL:
-                    g2d.setColor(new Color(50, 54, 62));
-                    g2d.fillRect(px, py, CELL_SIZE, CELL_SIZE);
+                    bgColor = new Color(120, 20, 20);
                     break;
                 case FINISH:
-                    if (cell.getFinishPlayerId() != null) {
-                        g2d.setColor(PLAYER_COLORS[cell.getFinishPlayerId() - 1].darker());
-                    } else {
-                        g2d.setColor(new Color(60, 100, 60));
-                    }
-                    g2d.fillRect(px, py, CELL_SIZE, CELL_SIZE);
+                    bgColor = PLAYER_COLORS[cell.getFinishPlayerId() - 1].darker();
                     break;
                 case FLOOR:
-                    g2d.setColor(new Color(70, 74, 82));
-                    g2d.fillRect(px, py, CELL_SIZE, CELL_SIZE);
+                default:
+                    if (cell.getForm() != null) {
+                        bgColor = getFormColor(cell.getForm());
+                    } else if (cell.hasSheet()) {
+                        bgColor = new Color(255, 152, 0);
+                    } else {
+                        bgColor = new Color(245, 245, 245);
+                    }
                     break;
             }
+
+            g2d.setColor(bgColor);
+            g2d.fillRect(px, py, CELL_SIZE, CELL_SIZE);
 
             // Draw grid lines
             g2d.setColor(new Color(90, 94, 102));
@@ -399,7 +403,7 @@ public class GameViewer extends JFrame {
 
             // Draw form if present
             if (cell.getForm() != null) {
-                g2d.setColor(Color.WHITE);
+                g2d.setColor(Color.BLACK);
                 g2d.setFont(new Font("Arial", Font.BOLD, 12));
                 FontMetrics fm = g2d.getFontMetrics();
                 String formStr = String.valueOf(cell.fetchFormID()); // FETCHING FORM
@@ -408,11 +412,43 @@ public class GameViewer extends JFrame {
                 g2d.drawString(formStr, textX, textY);
             }
 
-            // Draw sheet if present
-            if (cell.hasSheet()) {
-                g2d.setColor(new Color(255, 200, 0));
-                g2d.fillOval(px + CELL_SIZE / 4, py + CELL_SIZE / 4, CELL_SIZE / 2, CELL_SIZE / 2);
+            // Draw sheet if present (if not already background)
+            if (cell.hasSheet() && cell.getForm() != null) {
+                g2d.setColor(new Color(255, 152, 0));
+                g2d.fillOval(px + CELL_SIZE - 15, py + 5, 10, 10);
             }
+        }
+
+        private Color getFormColor(char letter) {
+            return switch (letter) {
+                case 'A' -> new Color(224, 60, 60);
+                case 'B' -> new Color(255, 255, 0);
+                case 'C' -> new Color(196, 106, 255);
+                case 'D' -> new Color(101, 187, 255);
+                case 'E' -> new Color(255, 0, 255);
+                case 'F' -> new Color(0, 255, 255);
+                case 'G' -> new Color(255, 165, 0);
+                case 'H' -> new Color(128, 0, 128);
+                case 'I' -> new Color(255, 192, 203);
+                case 'J' -> new Color(165, 42, 42);
+                case 'K' -> new Color(255, 215, 0);
+                case 'L' -> new Color(0, 128, 0);
+                case 'M' -> new Color(128, 0, 0);
+                case 'N' -> new Color(0, 0, 128);
+                case 'O' -> new Color(255, 140, 0);
+                case 'P' -> new Color(75, 0, 130);
+                case 'Q' -> new Color(240, 128, 128);
+                case 'R' -> new Color(50, 205, 50);
+                case 'S' -> new Color(255, 69, 0);
+                case 'T' -> new Color(255, 20, 147);
+                case 'U' -> new Color(64, 224, 208);
+                case 'V' -> new Color(220, 20, 60);
+                case 'W' -> new Color(255, 255, 224);
+                case 'X' -> new Color(152, 251, 152);
+                case 'Y' -> new Color(238, 130, 238);
+                case 'Z' -> new Color(70, 130, 180);
+                default -> new Color(128, 128, 128);
+            };
         }
 
         private void drawPlayer(Graphics2D g2d, GameState.PlayerSnapshot player) {
@@ -421,11 +457,11 @@ public class GameViewer extends JFrame {
 
             // Draw player circle
             g2d.setColor(PLAYER_COLORS[player.getId() - 1]);
-            int margin = 5;
+            int margin = 2;
             g2d.fillOval(px + margin, py + margin, CELL_SIZE - 2 * margin, CELL_SIZE - 2 * margin);
 
             // Draw player number
-            g2d.setColor(Color.WHITE);
+            g2d.setColor(Color.BLACK);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
             FontMetrics fm = g2d.getFontMetrics();
             String playerNum = String.valueOf(player.getId());
