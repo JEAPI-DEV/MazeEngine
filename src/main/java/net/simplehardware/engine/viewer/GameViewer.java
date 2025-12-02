@@ -115,7 +115,9 @@ public class GameViewer extends JFrame {
 
         // Fill empty slots if less than 4 players
         for (int i = numPlayers; i < 4; i++) {
-            logsPanel.add(new JPanel());
+            JPanel panel = new JPanel();
+            panel.setBackground(BG_DARK);
+            logsPanel.add(panel);
         }
 
         rightPanel.add(logsPanel, BorderLayout.CENTER);
@@ -173,11 +175,14 @@ public class GameViewer extends JFrame {
         stdoutPanel.setBackground(new Color(40, 44, 52));
         stdoutPanel.add(stdoutLabel, BorderLayout.NORTH);
         stdoutPanel.add(new JScrollPane(stdoutArea), BorderLayout.CENTER);
+        stdoutArea.setForeground(Color.WHITE);
 
         JPanel stderrPanel = new JPanel(new BorderLayout());
         stderrPanel.setBackground(new Color(40, 44, 52));
         stderrPanel.add(stderrLabel, BorderLayout.NORTH);
         stderrPanel.add(new JScrollPane(stderrArea), BorderLayout.CENTER);
+        stderrArea.setForeground(Color.WHITE);
+
 
         // Use GridBagLayout for proportional sizing: stdout = 1 part, stderr = 3 parts
         JPanel logsContainer = new JPanel(new GridBagLayout());
@@ -234,7 +239,7 @@ public class GameViewer extends JFrame {
 
         // Update turn label
         turnLabel.setText(String.format("Turn %d / %d",
-                state.getTurnNumber(), gameHistory.get(gameHistory.size() - 1).getTurnNumber()));
+                state.getTurnNumber(), gameHistory.getLast().getTurnNumber()));
 
         // Update maze panel
         mazePanel.setState(state);
@@ -257,8 +262,7 @@ public class GameViewer extends JFrame {
     }
 
     private void updateLogComponents(Component comp, Map<Integer, net.simplehardware.engine.viewer.PlayerLog> logs) {
-        if (comp instanceof JTextArea) {
-            JTextArea textArea = (JTextArea) comp;
+        if (comp instanceof JTextArea textArea) {
             String name = textArea.getName();
             if (name != null && name.startsWith("std")) {
                 String[] parts = name.split("_");
@@ -277,8 +281,7 @@ public class GameViewer extends JFrame {
                     textArea.setCaretPosition(0);
                 }
             }
-        } else if (comp instanceof Container) {
-            Container container = (Container) comp;
+        } else if (comp instanceof Container container) {
             for (Component child : container.getComponents()) {
                 updateLogComponents(child, logs);
             }
@@ -397,9 +400,9 @@ public class GameViewer extends JFrame {
             // Draw form if present
             if (cell.getForm() != null) {
                 g2d.setColor(Color.WHITE);
-                g2d.setFont(new Font("Arial", Font.BOLD, 20));
+                g2d.setFont(new Font("Arial", Font.BOLD, 12));
                 FontMetrics fm = g2d.getFontMetrics();
-                String formStr = String.valueOf(cell.getForm());
+                String formStr = String.valueOf(cell.fetchFormID()); // FETCHING FORM
                 int textX = px + (CELL_SIZE - fm.stringWidth(formStr)) / 2;
                 int textY = py + ((CELL_SIZE - fm.getHeight()) / 2) + fm.getAscent();
                 g2d.drawString(formStr, textX, textY);

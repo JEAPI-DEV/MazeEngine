@@ -71,6 +71,10 @@ public class CellSnapshot implements Serializable {
         return form;
     }
 
+    public String fetchFormID(){
+        return form.toString() + formOwner.toString();
+    }
+
     public Integer getFormOwner() {
         return formOwner;
     }

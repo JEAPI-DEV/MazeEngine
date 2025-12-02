@@ -249,7 +249,7 @@ public class GameEngine {
 
             // Receive player action
             try {
-                long timeout = (turn == 1) ? firstTurnTimeout : turnTimeout;
+                long timeout = (turn == 1 || turn == 2) ? firstTurnTimeout : turnTimeout;
 
                 List<String> outputs = new ArrayList<>();
                 String firstLine = process.readLine(timeout);

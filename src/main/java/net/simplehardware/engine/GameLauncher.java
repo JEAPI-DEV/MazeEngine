@@ -111,6 +111,8 @@ public class GameLauncher {
                 throw new IllegalArgumentException("--map argument is required");
             }
 
+            maxTurns *= playerPaths.size();
+
             launchGame(mapPath, playerPaths, maxTurns, randomSpawn, level, logging, turninfo, debug, gui);
 
         } catch (Exception e) {
@@ -175,7 +177,7 @@ public class GameLauncher {
         config.leagueLevel = level;
         config.logging = logging;
         config.maxTurns = maxTurns;
-        config.turnTimeoutMs = 100; // (was 50ms)
+        config.turnTimeoutMs = 500; // (was 50ms)
         config.firstTurnTimeoutMs = 1000;
         config.sheetsPerPlayer = 2; // Default or could be arg
         // Create and run game
