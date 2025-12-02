@@ -199,12 +199,14 @@ public class GameEngine {
 
         while (!referee.isGameOver(maxTurns)) {
             System.out.println("DEBUG: Running turn " + (referee.getCurrentTurn() + 1));
-            runTurn();
 
-            // Capture state after turn
+
+
+//            captureGameState();
+            runTurn();
+            referee.updateTurn();
             captureGameState();
 
-            referee.updateTurn();
         }
 
         System.out.println("\n=== Game Over ===");
@@ -223,7 +225,8 @@ public class GameEngine {
     }
 
     private void runTurn() {
-        int turn = referee.getCurrentTurn() + 1;
+        //int turn = referee.getCurrentTurn() + 1;
+        int turn = referee.getCurrentTurn();
 
         // Capture game engine output for this turn
         outputCapture.reset();
@@ -253,6 +256,7 @@ public class GameEngine {
 
                 List<String> outputs = new ArrayList<>();
                 String firstLine = process.readLine(timeout);
+                turn = referee.getCurrentTurn()+1;
 
                 if (firstLine == null || firstLine.trim().isEmpty() && turnInfo == 1) {
                     System.out.println("Player " + player.getId() + ": <no action>");
