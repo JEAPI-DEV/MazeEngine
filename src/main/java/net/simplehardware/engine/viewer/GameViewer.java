@@ -1,5 +1,9 @@
 package net.simplehardware.engine.viewer;
 
+import net.simplehardware.engine.viewer.elements.CellSnapshot;
+import net.simplehardware.engine.viewer.elements.GameState;
+import net.simplehardware.engine.viewer.elements.PlayerLog;
+
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
@@ -253,7 +257,7 @@ public class GameViewer extends JFrame {
     }
 
     private void updatePlayerLogs(GameState state) {
-        Map<Integer, net.simplehardware.engine.viewer.PlayerLog> logs = state.getPlayerLogs();
+        Map<Integer, PlayerLog> logs = state.getPlayerLogs();
 
         // Find all log text areas and update them
         for (Component comp : getContentPane().getComponents()) {
@@ -261,14 +265,14 @@ public class GameViewer extends JFrame {
         }
     }
 
-    private void updateLogComponents(Component comp, Map<Integer, net.simplehardware.engine.viewer.PlayerLog> logs) {
+    private void updateLogComponents(Component comp, Map<Integer, PlayerLog> logs) {
         if (comp instanceof JTextArea textArea) {
             String name = textArea.getName();
             if (name != null && name.startsWith("std")) {
                 String[] parts = name.split("_");
                 if (parts.length == 2) {
                     int playerId = Integer.parseInt(parts[1]);
-                    net.simplehardware.engine.viewer.PlayerLog log = logs.get(playerId);
+                    PlayerLog log = logs.get(playerId);
                     if (log != null) {
                         if (name.startsWith("stdout")) {
                             textArea.setText(log.getStdout());

@@ -5,8 +5,8 @@ import net.simplehardware.engine.game.Direction;
 import net.simplehardware.engine.game.Maze;
 import net.simplehardware.engine.players.Player;
 import net.simplehardware.engine.cells.Cell;
-import net.simplehardware.engine.viewer.GameState;
-import net.simplehardware.engine.viewer.PlayerLog;
+import net.simplehardware.engine.viewer.elements.GameState;
+import net.simplehardware.engine.viewer.elements.PlayerLog;
 
 import java.io.BufferedWriter;
 import java.io.File;

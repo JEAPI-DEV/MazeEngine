@@ -1,4 +1,4 @@
-package net.simplehardware.engine.viewer;
+package net.simplehardware.engine.viewer.elements;
 
 import net.simplehardware.engine.cells.Cell;
 import net.simplehardware.engine.players.Player;

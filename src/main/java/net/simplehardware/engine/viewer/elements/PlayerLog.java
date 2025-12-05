@@ -1,4 +1,4 @@
-package net.simplehardware.engine.viewer;
+package net.simplehardware.engine.viewer.elements;
 
 import java.io.Serial;
 import java.io.Serializable;
