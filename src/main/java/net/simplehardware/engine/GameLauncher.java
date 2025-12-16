@@ -4,8 +4,6 @@ import com.google.gson.Gson;
 import net.simplehardware.engine.core.GameEngine;
 import net.simplehardware.engine.game.Maze;
 import net.simplehardware.engine.viewer.GameViewer;
-import net.simplehardware.engine.viewer.WebViewerExporter;
-import net.simplehardware.engine.viewer.WebViewerServer;
 import net.simplehardware.models.MazeInfoData;
 
 import java.io.File;
@@ -13,6 +11,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.SwingUtilities;
 
 /**
  * Main launcher for the Maze Runner game engine
@@ -33,7 +32,6 @@ public class GameLauncher {
         int level = 5;
         int logging = 1, turninfo = 1, debug = 0;
         boolean gui = false;
-        boolean web = false;
 
         try {
             for (int i = 0; i < args.length; i++) {
@@ -104,9 +102,6 @@ public class GameLauncher {
                     case "--gui":
                         gui = true;
                         break;
-                    case "--web":
-                        web = true;
-                        break;
                     default:
                         // Ignore unknown args or handle as needed
                         break;
@@ -119,7 +114,7 @@ public class GameLauncher {
 
             maxTurns *= playerPaths.size();
 
-            launchGame(mapPath, playerPaths, maxTurns, randomSpawn, level, logging, turninfo, debug, gui, web);
+            launchGame(mapPath, playerPaths, maxTurns, randomSpawn, level, logging, turninfo, debug, gui);
 
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
@@ -136,7 +131,7 @@ public class GameLauncher {
     }
 
     public static void launchGame(String mazeFile, List<String> jarPaths, int maxTurns, boolean randomSpawn, int level,
-            int logging, int turninfo, int debug, boolean gui, boolean web)
+            int logging, int turninfo, int debug, boolean gui)
             throws IOException {
         // Load maze data
         MazeInfoData mazeData;
@@ -178,7 +173,6 @@ public class GameLauncher {
         Maze maze = new Maze(mazeData);
 
         System.out.println("Current debug status: " + debug);
-        // Create game configuration
         GameEngine.GameConfig config = new GameEngine.GameConfig();
         config.debug = debug;
         config.turnInfo = turninfo;
@@ -188,46 +182,12 @@ public class GameLauncher {
         config.turnTimeoutMs = 500; // (was 50ms)
         config.firstTurnTimeoutMs = 1000;
         config.sheetsPerPlayer = 2; // Default or could be arg
-        // Create and run game
         GameEngine engine = new GameEngine(maze, jarPaths, config);
-        // We need to pass randomSpawn to engine
         engine.setRandomSpawn(randomSpawn);
-
         engine.initialize();
         engine.runGame();
-
-        // Launch GUI viewer if requested
         if (gui) {
-            javax.swing.SwingUtilities.invokeLater(() -> {
-                new GameViewer(engine.getGameHistory(), mazeData.name);
-            });
-        }
-
-        // Launch web viewer if requested
-        if (web) {
-            try {
-                // Export game data to JSON
-                String outputPath = "game-data.json";
-                WebViewerExporter.exportToJSON(engine.getGameHistory(), mazeData.name, outputPath);
-
-                // Check if web viewer files exist
-                File htmlFile = new File("game-viewer.html");
-                if (!htmlFile.exists()) {
-                    System.err.println("Error: game-viewer.html not found in current directory.");
-                    System.out.println("Game data exported to: " + outputPath);
-                    System.out.println(
-                            "Please ensure game-viewer.html, game-viewer.css, and game-viewer.js are in the current directory.");
-                    return;
-                }
-
-                // Start HTTP server and open browser
-                WebViewerServer server = new WebViewerServer();
-                server.startAndWait();
-
-            } catch (Exception e) {
-                System.err.println("Error launching web viewer: " + e.getMessage());
-                e.printStackTrace();
-            }
+            SwingUtilities.invokeLater(() -> new GameViewer(engine.getGameHistory(), mazeData.name));
         }
     }
 }

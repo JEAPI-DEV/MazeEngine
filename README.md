@@ -1,4 +1,4 @@
-# Maze Runner CLI
+# MazeEngine
 
 This is Maze Runner CLI. It runs maze games with bots in Java. Players navigate grids and collect forms to finish.
 

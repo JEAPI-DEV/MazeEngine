@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>net.simplehardware</groupId>
-    <artifactId>MazeRunner</artifactId>
-    <version>0_5</version>
+    <artifactId>MazeEngine</artifactId>
+    <version>1_0</version>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
