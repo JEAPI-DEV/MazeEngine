@@ -1,5 +1,9 @@
 package net.simplehardware.engine.viewer;
 
+import net.simplehardware.engine.viewer.elements.CellSnapshot;
+import net.simplehardware.engine.viewer.elements.GameState;
+import net.simplehardware.engine.viewer.elements.PlayerLog;
+
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
@@ -253,7 +257,7 @@ public class GameViewer extends JFrame {
     }
 
     private void updatePlayerLogs(GameState state) {
-        Map<Integer, net.simplehardware.engine.viewer.PlayerLog> logs = state.getPlayerLogs();
+        Map<Integer, PlayerLog> logs = state.getPlayerLogs();
 
         // Find all log text areas and update them
         for (Component comp : getContentPane().getComponents()) {
@@ -261,19 +265,19 @@ public class GameViewer extends JFrame {
         }
     }
 
-    private void updateLogComponents(Component comp, Map<Integer, net.simplehardware.engine.viewer.PlayerLog> logs) {
+    private void updateLogComponents(Component comp, Map<Integer, PlayerLog> logs) {
         if (comp instanceof JTextArea textArea) {
             String name = textArea.getName();
             if (name != null && name.startsWith("std")) {
                 String[] parts = name.split("_");
                 if (parts.length == 2) {
                     int playerId = Integer.parseInt(parts[1]);
-                    net.simplehardware.engine.viewer.PlayerLog log = logs.get(playerId);
+                    PlayerLog log = logs.get(playerId);
                     if (log != null) {
                         if (name.startsWith("stdout")) {
-                            textArea.setText(log.getStdout());
+                            textArea.setText(log.stdout());
                         } else if (name.startsWith("stderr")) {
-                            textArea.setText(log.getStderr());
+                            textArea.setText(log.stderr());
                         }
                     } else {
                         textArea.setText("");
@@ -294,20 +298,20 @@ public class GameViewer extends JFrame {
         for (GameState.PlayerSnapshot player : state.getPlayers().values()) {
             JPanel playerPanel = new JPanel();
             playerPanel.setLayout(new BoxLayout(playerPanel, BoxLayout.Y_AXIS));
-            playerPanel.setBorder(BorderFactory.createLineBorder(PLAYER_COLORS[player.getId() - 1], 2));
+            playerPanel.setBorder(BorderFactory.createLineBorder(PLAYER_COLORS[player.id() - 1], 2));
             playerPanel.setBackground(BG_DARKER);
 
-            JLabel nameLabel = new JLabel("Player " + player.getId());
+            JLabel nameLabel = new JLabel("Player " + player.id());
             nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
-            nameLabel.setForeground(PLAYER_COLORS[player.getId() - 1]);
+            nameLabel.setForeground(PLAYER_COLORS[player.id() - 1]);
 
-            JLabel scoreLabel = new JLabel("Score: " + player.getScore());
+            JLabel scoreLabel = new JLabel("Score: " + player.score());
             scoreLabel.setForeground(FG_LIGHT);
             JLabel formsLabel = new JLabel(String.format("Forms: %d/%d",
-                    player.getFormsCollected(), player.getFormsRequired()));
+                    player.formsCollected(), player.formsRequired()));
             formsLabel.setForeground(FG_LIGHT);
             JLabel statusLabel = new JLabel(
-                    player.isFinished() ? "FINISHED" : (player.isActive() ? "Active" : "Inactive"));
+                    player.finished() ? "FINISHED" : (player.active() ? "Active" : "Inactive"));
             statusLabel.setForeground(FG_LIGHT);
 
             playerPanel.add(nameLabel);
@@ -363,7 +367,7 @@ public class GameViewer extends JFrame {
 
             // Draw players on top
             for (GameState.PlayerSnapshot player : currentState.getPlayers().values()) {
-                if (player.isActive()) {
+                if (player.active()) {
                     drawPlayer(g2d, player);
                 }
             }
@@ -375,17 +379,17 @@ public class GameViewer extends JFrame {
 
             // Fill background
             Color bgColor;
-            switch (cell.getType()) {
+            switch (cell.type()) {
                 case WALL:
                     bgColor = new Color(120, 20, 20);
                     break;
                 case FINISH:
-                    bgColor = PLAYER_COLORS[cell.getFinishPlayerId() - 1].darker();
+                    bgColor = PLAYER_COLORS[cell.finishPlayerId() - 1].darker();
                     break;
                 case FLOOR:
                 default:
-                    if (cell.getForm() != null) {
-                        bgColor = getFormColor(cell.getForm());
+                    if (cell.form() != null) {
+                        bgColor = getFormColor(cell.form());
                     } else if (cell.hasSheet()) {
                         bgColor = new Color(255, 152, 0);
                     } else {
@@ -402,18 +406,18 @@ public class GameViewer extends JFrame {
             g2d.drawRect(px, py, CELL_SIZE, CELL_SIZE);
 
             // Draw form if present
-            if (cell.getForm() != null) {
+            if (cell.form() != null) {
                 g2d.setColor(Color.BLACK);
                 g2d.setFont(new Font("Arial", Font.BOLD, 12));
                 FontMetrics fm = g2d.getFontMetrics();
-                String formStr = String.valueOf(cell.fetchFormID()); // FETCHING FORM
+                String formStr = String.valueOf(cell.formOwner()); // FETCHING FORM
                 int textX = px + (CELL_SIZE - fm.stringWidth(formStr)) / 2;
                 int textY = py + ((CELL_SIZE - fm.getHeight()) / 2) + fm.getAscent();
                 g2d.drawString(formStr, textX, textY);
             }
 
-            // Draw sheet if present (if not already background)
-            if (cell.hasSheet() && cell.getForm() != null) {
+            // Draw sheet if present (is not already background)
+            if (cell.hasSheet() && cell.form() != null) {
                 g2d.setColor(new Color(255, 152, 0));
                 g2d.fillOval(px + CELL_SIZE - 15, py + 5, 10, 10);
             }
@@ -452,11 +456,11 @@ public class GameViewer extends JFrame {
         }
 
         private void drawPlayer(Graphics2D g2d, GameState.PlayerSnapshot player) {
-            int px = player.getX() * CELL_SIZE;
-            int py = player.getY() * CELL_SIZE;
+            int px = player.x() * CELL_SIZE;
+            int py = player.y() * CELL_SIZE;
 
             // Draw player circle
-            g2d.setColor(PLAYER_COLORS[player.getId() - 1]);
+            g2d.setColor(PLAYER_COLORS[player.id() - 1]);
             int margin = 2;
             g2d.fillOval(px + margin, py + margin, CELL_SIZE - 2 * margin, CELL_SIZE - 2 * margin);
 
@@ -464,7 +468,7 @@ public class GameViewer extends JFrame {
             g2d.setColor(Color.BLACK);
             g2d.setFont(new Font("Arial", Font.BOLD, 16));
             FontMetrics fm = g2d.getFontMetrics();
-            String playerNum = String.valueOf(player.getId());
+            String playerNum = String.valueOf(player.id());
             int textX = px + (CELL_SIZE - fm.stringWidth(playerNum)) / 2;
             int textY = py + ((CELL_SIZE - fm.getHeight()) / 2) + fm.getAscent();
             g2d.drawString(playerNum, textX, textY);

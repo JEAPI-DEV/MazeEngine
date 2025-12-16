@@ -5,8 +5,8 @@ import net.simplehardware.engine.game.Direction;
 import net.simplehardware.engine.game.Maze;
 import net.simplehardware.engine.players.Player;
 import net.simplehardware.engine.cells.Cell;
-import net.simplehardware.engine.viewer.GameState;
-import net.simplehardware.engine.viewer.PlayerLog;
+import net.simplehardware.engine.viewer.elements.GameState;
+import net.simplehardware.engine.viewer.elements.PlayerLog;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -17,9 +17,6 @@ import java.io.PrintStream;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Main game engine that coordinates the game flow
- */
 public class GameEngine {
     private final Maze maze;
     private final List<Player> players;
@@ -34,23 +31,19 @@ public class GameEngine {
     private final int turnInfo;
 
     private final Map<Player, ActionResult> lastResults;
-    // private GameViewer viewer; // Removed
+
     private boolean randomSpawn = false;
     private final Map<Integer, StringBuilder> playerLogs = new HashMap<>();
-    private final List<String> jarPaths; // Store jar paths for logging filenames
     private final ByteArrayOutputStream outputCapture = new ByteArrayOutputStream();
     private final ByteArrayOutputStream errorCapture = new ByteArrayOutputStream();
     private final StringBuilder protocolCapture = new StringBuilder();
     private final PrintStream originalOut = System.out;
     private final PrintStream originalErr = System.err;
-
-    // Game history for GUI viewer
     private final List<GameState> gameHistory = new ArrayList<>();
     private final Map<Integer, PlayerLog> currentTurnLogs = new HashMap<>();
 
     public GameEngine(Maze maze, List<String> jarPaths, GameConfig config) {
         this.maze = maze;
-        this.jarPaths = new ArrayList<>(jarPaths);
         this.leagueLevel = config.leagueLevel;
         this.maxTurns = config.maxTurns;
         this.turnTimeout = config.turnTimeoutMs;
@@ -63,21 +56,12 @@ public class GameEngine {
         this.playerProcesses = new HashMap<>();
         this.lastResults = new HashMap<>();
 
-        // Initialize players
         initializePlayers(jarPaths);
-
-        // Apply level restrictions (Level 1: No forms)
         maze.applyLevelRestrictions(leagueLevel);
 
-        // Assign forms to players
         assignForms();
-
-        // Remove forms and finish cells for unloaded players
         maze.removeUnusedPlayerCells(players);
-
-        // Update finish cells with required form counts
         maze.updateFinishCells(players);
-
         this.referee = new Referee(maze, players, leagueLevel, config.debug == 1);
     }
 
@@ -145,7 +129,6 @@ public class GameEngine {
                     }
                 }
             }
-            // Sort assigned forms alphabetically
             player.getAssignedForms().sort(Character::compareTo);
         }
     }
@@ -162,12 +145,10 @@ public class GameEngine {
                 continue;
 
             PlayerProcess process = playerProcesses.get(player);
-
-            // Send initialization data
-            // Line 1: MAZE_WIDTH MAZE_HEIGHT LEAGUE_LEVEL
+            // MAZE_WIDTH MAZE_HEIGHT LEAGUE_LEVEL
             process.sendLine(maze.getWidth() + " " + maze.getHeight() + " " + leagueLevel);
 
-            // Line 2: PLAYER_ID START_X START_Y SHEETS_PER_PLAYER (Level 5+)
+            // PLAYER_ID START_X START_Y SHEETS_PER_PLAYER (Level 5+)
             String line2 = player.getId() + " " + player.getStartX() + " " + player.getStartY();
             if (leagueLevel >= 5) {
                 line2 += " " + sheetsPerPlayer;
@@ -180,13 +161,6 @@ public class GameEngine {
     }
 
     public void runGame() {
-        // Viewer removed
-        // SwingUtilities.invokeLater(() -> {
-        // viewer = new GameViewer(maze);
-        // viewer.showViewer();
-        // });
-
-        // Wait for viewer to initialize
         try {
             Thread.sleep(500);
         } catch (InterruptedException e) {
@@ -208,24 +182,13 @@ public class GameEngine {
         captureGameState();
         System.out.println("\n=== Game Over ===");
         printFinalResults();
-
-        // Add final snapshot - removed
-        // captureSnapshot(referee.getCurrentTurn(), "=== Game Over ===", "", "", "");
-
-        // Save logs
-        savePlayerLogs();
-
-        // Cleanup
         for (PlayerProcess process : playerProcesses.values()) {
             process.destroy();
         }
     }
 
     private void runTurn() {
-        //int turn = referee.getCurrentTurn() + 1;
         int turn = referee.getCurrentTurn();
-
-        // Capture game engine output for this turn
         outputCapture.reset();
         errorCapture.reset();
         protocolCapture.setLength(0);
@@ -246,8 +209,6 @@ public class GameEngine {
             // Send turn data (6 lines)
             sendTurnData(player, process);
             protocolCapture.append("\n");
-
-            // Receive player action
             try {
                 long timeout = (turn == 1 || turn == 2) ? firstTurnTimeout : turnTimeout;
 
@@ -280,18 +241,15 @@ public class GameEngine {
                     action = outputs.getLast();
                 }
                 if (outputs.size() > 1) {
-                    System.out.println(
-                            "Player " + player.getId() + " output " + outputs.size() + " lines, using: " + action);
+                    System.out.println("Player " + player.getId() + " output " + outputs.size() + " lines, using: " + action);
                 }
 
-                if (turnInfo == 1)
-                    System.out.println("Player " + player.getId() + ": " + action);
+                if (turnInfo == 1) System.out.println("Player " + player.getId() + ": " + action);
 
-                // Process action
                 ActionResult result = referee.processAction(player, action);
                 lastResults.put(player, result);
 
-                logToPlayer(player.getId(), action); // Log action sent by player
+                logToPlayer(player.getId(), action);
 
                 if (turnInfo == 1)
                     System.out.println("  Result: " + result);
@@ -307,7 +265,6 @@ public class GameEngine {
         if (turnInfo == 1)
             System.out.println();
 
-        // Collect all player stdout and stderr
         StringBuilder playerStdoutAll = new StringBuilder();
         StringBuilder playerStderrAll = new StringBuilder();
         for (Player player : players) {
@@ -315,9 +272,7 @@ public class GameEngine {
             String stdout = process.getStdout();
             String stderr = process.getStderr();
 
-            // Store logs for GUI viewer
             currentTurnLogs.put(player.getId(), new PlayerLog(stdout, stderr));
-
             if (!stdout.isEmpty()) {
                 playerStdoutAll.append("=== Player ").append(player.getId()).append(" stdout ===\n");
                 playerStdoutAll.append(stdout);
@@ -329,18 +284,11 @@ public class GameEngine {
             process.resetIO();
         }
 
-        // Capture snapshot with all output streams
         String gameLog = outputCapture.toString();
-        String playerStdout = playerStdoutAll.toString();
         String playerStderr = playerStderrAll.toString();
-        String protocol = protocolCapture.toString();
-        // captureSnapshot call removed
-
-        // Restore original streams
         System.setOut(originalOut);
         System.setErr(originalErr);
 
-        // Print to console
         System.out.print(gameLog);
         if (!playerStderr.isEmpty() && logging == 1) {
             System.err.print(playerStderr);
@@ -348,20 +296,17 @@ public class GameEngine {
     }
 
     private void sendTurnData(Player player, PlayerProcess process) {
-        // Line 1: Last action result
         ActionResult lastResult = lastResults.get(player);
         String line1 = lastResult.toString();
         process.sendLine(line1);
         protocolCapture.append(line1).append("\n");
         logToPlayer(player.getId(), line1);
 
-        // Line 2: Current cell status
         String currentCell = maze.getCellInfo(player.getX(), player.getY(), players, player, null, leagueLevel);
         process.sendLine(currentCell);
         protocolCapture.append(currentCell).append("\n");
         logToPlayer(player.getId(), currentCell);
 
-        // Lines 3-6: Neighboring cells (NORTH, EAST, SOUTH, WEST)
         for (Direction dir : Direction.values()) {
             int nx = player.getX() + dir.getDx();
             int ny = player.getY() + dir.getDy();
@@ -375,7 +320,6 @@ public class GameEngine {
     private void printFinalResults() {
         System.out.println("Final Scores:");
 
-        // Check for Last Player Standing bonus
         long activePlayers = players.stream().filter(Player::isActive).count();
         if (activePlayers == 1) {
             Player lastStanding = players.stream().filter(Player::isActive).findFirst().orElse(null);
@@ -419,31 +363,7 @@ public class GameEngine {
         }
     }
 
-    private void savePlayerLogs() {
-        for (int i = 0; i < players.size(); i++) {
-            Player player = players.get(i);
-            int playerId = player.getId();
-            StringBuilder log = playerLogs.get(playerId);
-            if (log != null && i < jarPaths.size()) {
-                String jarPath = jarPaths.get(i);
-                String jarName = new File(jarPath).getName();
-                String logFileName = jarName + ".txt"; // "with the jar name"
-
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFileName))) {
-                    writer.write(log.toString());
-                    System.out.println("Saved protocol log for Player " + playerId + " to " + logFileName);
-                } catch (IOException e) {
-                    System.err.println("Failed to save log for Player " + playerId + ": " + e.getMessage());
-                }
-            }
-        }
-    }
-
-    /**
-     * Capture current game state for GUI viewer
-     */
     private void captureGameState() {
-        // Get current cell grid
         Cell[][] cellGrid = new Cell[maze.getWidth()][maze.getHeight()];
         for (int x = 0; x < maze.getWidth(); x++) {
             for (int y = 0; y < maze.getHeight(); y++) {
@@ -463,9 +383,6 @@ public class GameEngine {
         currentTurnLogs.clear();
     }
 
-    /**
-     * Get game history for GUI viewer
-     */
     public List<GameState> getGameHistory() {
         return new ArrayList<>(gameHistory);
     }

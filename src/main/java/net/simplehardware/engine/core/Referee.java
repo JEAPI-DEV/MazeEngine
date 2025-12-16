@@ -34,7 +34,6 @@ public class Referee {
             return ActionResult.fail("INACTIVE");
         }
 
-        // Check if player is talking (penalty turn)
         if (player.isTalking()) {
             player.addScore(-5);
             return ActionResult.fail("TALKING");
@@ -85,10 +84,7 @@ public class Referee {
                 return ActionResult.fail("BLOCKED");
             }
 
-            // Move the player
             player.setPosition(newX, newY);
-
-            // Collision check moved to updateTurn to handle swapping correctly
 
             return ActionResult.ok(direction.name());
         } catch (IllegalArgumentException e) {
@@ -114,7 +110,6 @@ public class Referee {
             return ActionResult.fail("EMPTY");
         }
 
-        // Try to take a sheet (Level 5+) - Priority over Form
         if (leagueLevel >= 5 && floor.hasSheet()) {
             player.addSheet();
             floor.setSheet(false);
@@ -122,7 +117,6 @@ public class Referee {
             return ActionResult.ok("SHEET");
         }
 
-        // Try to take a form (Level 2+)
         if (leagueLevel >= 2 && floor.getForm() != null) {
             char form = floor.getForm();
             int formOwner = floor.getFormOwner();
@@ -176,7 +170,6 @@ public class Referee {
                 return ActionResult.fail("BLOCKED");
             }
 
-            // Kick sheet (Level 5+) - Priority over Form
             if (leagueLevel >= 5 && floor.hasSheet()) {
                 if (targetFloor.hasSheet()) {
                     return ActionResult.fail("BLOCKED");
@@ -186,7 +179,6 @@ public class Referee {
                 return ActionResult.ok(direction.name());
             }
 
-            // Kick form (Level 4+)
             if (floor.getForm() != null) {
                 if (targetFloor.getForm() != null) {
                     return ActionResult.fail("BLOCKED");
@@ -303,22 +295,16 @@ public class Referee {
             return true;
         }
 
-        // Check if any active player has finished
         for (Player player : players) {
             if (player.isFinished()) {
                 return true;
             }
         }
-
-        // Check if no players are still active
         long activePlayers = players.stream().filter(Player::isActive).count();
         return activePlayers == 0;
     }
 
     public Player getWinner() {
-        // Find player with highest score
-        // Tie-breaker: Number of collected forms
-
         List<Player> sortedPlayers = new java.util.ArrayList<>(players);
         sortedPlayers.sort((p1, p2) -> {
             int scoreCompare = Integer.compare(p2.getScore(), p1.getScore());
@@ -331,7 +317,6 @@ public class Referee {
         if (sortedPlayers.isEmpty())
             return null;
 
-        // Check if there's a unique winner or a tie for first place
         if (sortedPlayers.size() > 1) {
             Player first = sortedPlayers.get(0);
             Player second = sortedPlayers.get(1);

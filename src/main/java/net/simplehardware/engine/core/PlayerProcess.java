@@ -21,17 +21,24 @@ public class PlayerProcess {
         this.playerId = playerId;
         this.executor = Executors.newFixedThreadPool(2);
 
-        ProcessBuilder pb = new ProcessBuilder("java", "-jar", jarPath);
-        // Don't redirect error stream - keep them separate
-        this.process = pb.start();
+        // File policyFile = new File("bot.policy");
+        // String policyPath = policyFile.getAbsolutePath();
 
-        // Separate readers for stdout and stderr
+        // String absJarPath = new File(jarPath).getAbsolutePath();
+
+        ProcessBuilder pb = new ProcessBuilder(
+                "java",
+                // "-Djava.security.manager",
+                // "-Djava.security.policy=" + policyPath,
+                // "-Dbot.jar.path=" + absJarPath,
+                "-jar",
+                jarPath);
+        this.process = pb.start();
         this.stdoutReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
         this.stderrReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
         this.stdinWriter = new PrintWriter(new OutputStreamWriter(process.getOutputStream()), true);
         this.timedOut = false;
 
-        // Start background threads to capture stderr
         startStderrCapture();
     }
 
@@ -49,9 +56,7 @@ public class PlayerProcess {
                         stderrBuffer.append(line).append("\n");
                     }
                 }
-            } catch (IOException e) {
-                // Process ended
-            }
+            } catch (IOException ignored) { }
         });
     }
 
